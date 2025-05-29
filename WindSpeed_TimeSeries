@@ -1,0 +1,57 @@
+var imageCollection = ee.ImageCollection("ECMWF/NRT_FORECAST/IFS/OPER"),
+    geometry = 
+    /* color: #bf04c2 */
+    /* displayProperties: [
+      {
+        "type": "rectangle"
+      },
+      {
+        "type": "rectangle"
+      }
+    ] */
+    ee.FeatureCollection(
+        [ee.Feature(
+            ee.Geometry.Polygon(
+                [[[-0.04371380499655242, 51.71182267791331],
+                  [-0.04371380499655242, 51.70338587090551],
+                  [-0.028146263874115895, 51.70338587090551],
+                  [-0.028146263874115895, 51.71182267791331]]], null, false),
+            {
+              "system:index": "0"
+            }),
+        ee.Feature(
+            ee.Geometry.Polygon(
+                [[[-3.219351565528774, 55.95366938433916],
+                  [-3.219351565528774, 55.945499438438766],
+                  [-3.205876147437954, 55.945499438438766],
+                  [-3.205876147437954, 55.95366938433916]]], null, false),
+            {
+              "system:index": "1"
+            })]);
+
+var img = imageCollection.filterDate('2025-05-20','2025-05-28')
+.select(['u_component_of_wind_10m_sfc','v_component_of_wind_10m_sfc'])
+.filterBounds(geometry);
+
+var wind = img.map(function(image){
+  var u = image.select('u_component_of_wind_10m_sfc');
+  var v = image.select('v_component_of_wind_10m_sfc');
+  var W =(u.pow(2).add(v.pow(2))).sqrt().rename('WIND');
+  return W.set('system:time_start',image.date().millis())
+});
+
+print(wind)
+print(
+  ui.Chart.image.seriesByRegion(wind, geometry, ee.Reducer.max(), 'WIND',250)
+  .setChartType('AreaChart')
+  .setOptions({
+    title:'Wind Comparision Timeseries',
+    vAxis:{title:'Wind Speed m/s'},
+    hAxis:{title:'Date'},
+    series:{
+      0:{labelInLegend:'London'},
+      1:{labelInLegend:'Edinburgh'}
+    }
+  })
+  
+  );
